@@ -30,7 +30,7 @@ func (sf standardFormat) Format(entry *LogEntry) (string, error) {
 		message.WriteByte(' ')
 	}
 
-	message.WriteString(strings.ToUpper(verboseToLogrusLevel(entry.Verbose).String()))
+	message.WriteString(strings.ToUpper(levelToLogrusLevel(entry.Level).String()))
 	message.WriteByte(' ')
 
 	if entry.Message != "" {
@@ -52,7 +52,7 @@ func (jf jsonFormat) Format(entry *LogEntry) (string, error) {
 	jsonFile := make(map[string]interface{})
 	jsonFile["timestamp"] = entry.Time.Format(time.RFC3339Nano)
 	jsonFile["message"] = entry.Message
-	jsonFile["level"] = strings.ToUpper(verboseToLogrusLevel(entry.Verbose).String())
+	jsonFile["level"] = strings.ToUpper(levelToLogrusLevel(entry.Level).String())
 	if entry.Caller.File != "" {
 		jsonFile["caller"] = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
 	}
@@ -79,33 +79,33 @@ func NewStandardLogger() Logger {
 }
 
 func (sl *standardLogger) Debug(args ...interface{}) {
-	sl.log(true, args...)
+	sl.log(true, DebugLevel, args...)
 }
 
 func (sl *standardLogger) Debugf(format string, args ...interface{}) {
-	sl.logf(true, format, args...)
+	sl.logf(true, DebugLevel, format, args...)
 }
 
 func (sl *standardLogger) Error(errMsg error, args ...interface{}) {
 	if msg, _ := sl.fields.Get(errMsgKey); msg != errMsg.Error() {
 		sl.fields = sl.fields.With(errMsgKey, errMsg.Error())
 	}
-	sl.log(false, args...)
+	sl.log(false, ErrorLevel, args...)
 }
 
 func (sl *standardLogger) Errorf(errMsg error, format string, args ...interface{}) {
 	if msg, _ := sl.fields.Get(errMsgKey); msg != errMsg.Error() {
 		sl.fields = sl.fields.With(errMsgKey, errMsg.Error())
 	}
-	sl.logf(false, format, args...)
+	sl.logf(false, ErrorLevel, format, args...)
 }
 
 func (sl *standardLogger) Info(args ...interface{}) {
-	sl.log(false, args...)
+	sl.log(false, InfoLevel, args...)
 }
 
 func (sl *standardLogger) Infof(format string, args ...interface{}) {
-	sl.logf(false, format, args...)
+	sl.logf(false, InfoLevel, format, args...)
 }
 
 func (sl *standardLogger) Log(entry *LogEntry) {
@@ -160,23 +160,25 @@ func (sl *standardLogger) Copy() Logger {
 	return &standardLogger{sl.getCopiedInternalLogger(), sl.fields, sl.logCaller}
 }
 
-func (sl *standardLogger) log(verbose bool, args ...interface{}) {
+func (sl *standardLogger) log(verbose bool, level Level, args ...interface{}) {
 	logWithLogrus(sl.internal, &LogEntry{
 		Time:    time.Now(),
 		Message: fmt.Sprint(args...),
 		Data:    sl.fields,
 		Caller:  sl.getLogEntryCaller(),
 		Verbose: verbose,
+		Level:   level,
 	})
 }
 
-func (sl *standardLogger) logf(verbose bool, format string, args ...interface{}) {
+func (sl *standardLogger) logf(verbose bool, level Level, format string, args ...interface{}) {
 	logWithLogrus(sl.internal, &LogEntry{
 		Time:    time.Now(),
 		Message: fmt.Sprintf(format, args...),
 		Data:    sl.fields,
 		Caller:  sl.getLogEntryCaller(),
 		Verbose: verbose,
+		Level:   level,
 	})
 }
 

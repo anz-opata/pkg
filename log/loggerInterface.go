@@ -7,6 +7,15 @@ import (
 	"github.com/arr-ai/frozen"
 )
 
+// Level set at logging call. Higher levels are more important.
+type Level int8
+
+const (
+	DebugLevel Level = iota - 1
+	InfoLevel
+	ErrorLevel
+)
+
 // Logger is the underlying logger that is to be added to a context.
 type Logger interface {
 	// Debug logs the message at the Debug level.
@@ -41,6 +50,8 @@ type LogEntry struct { // nolint:golint // log.LogEntry stutters but is public A
 
 	// True if the log is verbose (Debug), false otherwise (Info or Error)
 	Verbose bool
+
+	Level Level
 }
 
 // CodeReference describes a reference to a point within a source code file.

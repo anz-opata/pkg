@@ -10,7 +10,7 @@ const dataFieldCaller = "_caller"
 
 // Log the given entry with the logrus logger.
 func logWithLogrus(logger *logrus.Logger, e *LogEntry) {
-	pkgLogEntryToLogrusEntry(logger, e).Log(verboseToLogrusLevel(e.Verbose), e.Message)
+	pkgLogEntryToLogrusEntry(logger, e).Log(levelToLogrusLevel(e.Level), e.Message)
 }
 
 // Component to convert a logrus formatter into a pkg formatter.
@@ -46,7 +46,7 @@ func pkgLogEntryToLogrusEntry(logger *logrus.Logger, entry *LogEntry) *logrus.En
 		Logger:  logger,
 		Data:    logrus.Fields{dataFieldKey: entry.Data, dataFieldCaller: entry.Caller},
 		Time:    entry.Time,
-		Level:   verboseToLogrusLevel(entry.Verbose),
+		Level:   levelToLogrusLevel(entry.Level),
 		Caller:  nil,
 		Message: entry.Message,
 		Buffer:  nil,
@@ -62,6 +62,7 @@ func logrusEntryToPkgLogEntry(entry *logrus.Entry) *LogEntry {
 		Data:    entry.Data[dataFieldKey].(frozen.Map),
 		Caller:  entry.Data[dataFieldCaller].(CodeReference),
 		Verbose: logrusLevelToVerbose(entry.Level),
+		Level:   logrusLevelToLevel(entry.Level),
 	}
 }
 
@@ -78,10 +79,13 @@ func (h pkgHookToLogrusHook) Fire(entry *logrus.Entry) error {
 	return h.hook.OnLogged(logrusEntryToPkgLogEntry(entry))
 }
 
-// Convert the pkg concept of verbosity to a logrus level.
-func verboseToLogrusLevel(verbose bool) logrus.Level {
-	if verbose {
+// Convert the pkg concept of level to a logrus level.
+func levelToLogrusLevel(level Level) logrus.Level {
+	switch level {
+	case DebugLevel:
 		return logrus.DebugLevel
+	case ErrorLevel:
+		return logrus.ErrorLevel
 	}
 	return logrus.InfoLevel
 }
@@ -89,4 +93,15 @@ func verboseToLogrusLevel(verbose bool) logrus.Level {
 // Convert a logrus level to the pkg concept of verbosity.
 func logrusLevelToVerbose(level logrus.Level) bool {
 	return level == logrus.DebugLevel
+}
+
+// Convert a logrus level to the pkg concept of level.
+func logrusLevelToLevel(level logrus.Level) Level {
+	switch {
+	case level == logrus.DebugLevel:
+		return DebugLevel
+	case level <= logrus.ErrorLevel:
+		return ErrorLevel
+	}
+	return InfoLevel
 }

@@ -39,6 +39,7 @@ func TestLogrusPkgEntry(t *testing.T) {
 		Data:    frozen.NewMap(frozen.KV("cat", "dog")),
 		Caller:  CodeReference{"example.go", 123},
 		Verbose: true,
+		Level:   DebugLevel,
 	}
 
 	logger := logrus.New()
